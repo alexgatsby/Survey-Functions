@@ -20,7 +20,7 @@ rm(list = ls())
 
 # teste --------------
 
-pnadc_anual_visita <- import ('data/pnad_anual_2023_interview5.rds')
+pnadc_anual_visita <- import ('data/pnad_trimestral_2024_3.rds')
 
 # ---
 
@@ -174,9 +174,22 @@ db_outr <- full_join(db_outr1, db_outr2)
 colnames (db_outr) <- c('capital', 'rend', 'se_rend', 'perc_recebe', 'perc_nao_recebe', 'se_perc_recebe', 'se_perc_nao_recebe')
 db_outr$tipo <- 'Outros rendimentos como bolsas de estudo e aplicações financeiras'
 
+# ---
+
+pnadc_anual_visita$variables <- transform(pnadc_anual_visita$variables, real=VD4020*CO1e)
+
+db_trab <- svyby (formula=~real,
+                   design=subset(pnadc_anual_visita, V4001=='Sim'),
+                   by=~Capital,
+                   FUN=svymean,
+                   na.rm=T)
+
+colnames (db_outr) <- c('capital', 'rend', 'se_rend')
+db_trab$tipo <- 'Trabalhos Remunerados em Dinheiro'
+
 # jutando ---
 
-db <- bind_rows(db_seg, db_pbf, db_outr, db_out, db_inss, db_bpc, db_alu, db_ali)
+db <- bind_rows(db_seg, db_pbf, db_outr, db_out, db_inss, db_bpc, db_alu, db_ali, db_trab)
 glimpse (db)
 db %>% count (tipo)
 
@@ -340,9 +353,22 @@ tiposrend_percreceb_mediarecebido_capitais <- function (ano, entrevista=5){
   colnames (db_outr) <- c('capital', 'rend', 'se_rend', 'perc_recebe', 'perc_nao_recebe', 'se_perc_recebe', 'se_perc_nao_recebe')
   db_outr$tipo <- 'Outros rendimentos como bolsas de estudo e aplicações financeiras'
   
+  # ---
+  
+  pnadc_anual_visita$variables <- transform(pnadc_anual_visita$variables, real=VD4020*CO1e)
+  
+  db_trab <- svyby (formula=~real,
+                    design=subset(pnadc_anual_visita, V4001=='Sim'),
+                    by=~Capital,
+                    FUN=svymean,
+                    na.rm=T)
+  
+  colnames (db_trab) <- c('capital', 'rend', 'se_rend')
+  db_trab$tipo <- 'Trabalhos Remunerados em Dinheiro'
+  
   # jutando ---
   
-  db <- bind_rows(db_seg, db_pbf, db_outr, db_out, db_inss, db_bpc, db_alu, db_ali)
+  db <- bind_rows(db_seg, db_pbf, db_outr, db_out, db_inss, db_bpc, db_alu, db_ali, db_trab)
   
   rm (db_seg1, db_pbf1, db_outr1, db_out1, db_inss1, db_bpc1, db_alu1, db_ali1,
       db_seg2, db_pbf2, db_outr2, db_out2, db_inss2, db_bpc2, db_alu2, db_ali2)
